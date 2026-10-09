@@ -1,0 +1,268 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatDigest — Catch up instantly</title>
+  <meta name="description" content="Turn long group chats into clear summaries, decisions, action items, and deadlines." />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Inter, system-ui, Arial, sans-serif;
+      background: #f7f8fc; color: #171923;
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 7%; background: white; border-bottom: 1px solid #e9eaf0;
+    }
+    .logo { font-size: 23px; font-weight: 800; letter-spacing: -1px; }
+    .logo span { color: #e44b57; }
+    .tag { color: #737789; font-size: 13px; }
+    main { max-width: 1000px; margin: 45px auto; padding: 0 20px; }
+    .hero { text-align: center; margin-bottom: 35px; }
+    .pill {
+      display: inline-block; padding: 8px 13px; border-radius: 30px;
+      background: #fff0f1; color: #cf3947; font-size: 12px; font-weight: 700;
+    }
+    h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.1; letter-spacing: -2px; margin: 20px 0 14px; }
+    h1 span { color: #e44b57; }
+    .hero p { color: #74798a; line-height: 1.7; max-width: 590px; margin: auto; }
+    .panel {
+      background: white; border: 1px solid #e6e8ef; border-radius: 18px;
+      padding: 24px; box-shadow: 0 8px 35px #20253a08; margin-bottom: 22px;
+    }
+    .panel-head { display:flex; justify-content:space-between; gap:12px; align-items:center; margin-bottom: 15px; }
+    h2 { font-size: 17px; margin: 0; }
+    .muted { color:#85899a; font-size:12px; }
+    textarea {
+      width:100%; min-height:210px; resize:vertical; padding:16px;
+      border:1px solid #e1e4ed; border-radius:12px; outline:none;
+      font:14px/1.7 inherit; font-family:inherit; background:#fcfcfe;
+    }
+    textarea:focus { border-color:#e44b57; box-shadow:0 0 0 3px #e44b5714; }
+    button { cursor:pointer; border:0; border-radius:10px; font-weight:700; padding:12px 17px; }
+    .primary { background:#e44b57; color:white; width:100%; margin-top:15px; font-size:15px; padding:15px; }
+    .primary:hover { background:#ce3946; }
+    .secondary { background:#f0f1f6; color:#36394a; font-size:12px; }
+    .primary:disabled { opacity:.6; cursor:wait; }
+    .results { display:none; }
+    .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .summary { line-height:1.8; color:#555a6c; font-size:14px; }
+    .item { padding:13px 0; border-bottom:1px solid #eff0f5; font-size:14px; line-height:1.6; }
+    .item:last-child { border:0; }
+    .priority { font-size:10px; font-weight:800; border-radius:5px; padding:4px 7px; margin-right:6px; }
+    .high { background:#ffe6e8; color:#c52e40; }
+    .medium { background:#fff0d7; color:#a76505; }
+    .low { background:#e5f7ed; color:#237a4c; }
+    .check { margin-right:8px; accent-color:#e44b57; }
+    .empty { color:#8b8fa0; font-size:13px; }
+    footer { text-align:center; color:#9699a8; font-size:12px; padding:30px 15px; }
+    .error { color:#c52e40; font-size:13px; margin-top:10px; }
+    @media(max-width:650px) {
+      header { padding:17px 20px; }
+      .tag { display:none; }
+      main { margin:30px auto; padding:0 14px; }
+      .panel { padding:17px; }
+      .result-grid { grid-template-columns:1fr; }
+      h1 { letter-spacing:-1px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">Chat<span>Digest</span></div>
+    <div class="tag">Less scrolling. More doing.</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="pill">YOUR AI CHAT ASSISTANT</span>
+      <h1>Too many messages?<br /><span>Get the important stuff.</span></h1>
+      <p>Turn long, messy group chats into clear summaries, action items, and important decisions in seconds.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Paste your conversation</h2>
+        <button class="secondary" id="demo">Try example</button>
+      </div>
+      <textarea id="chat" placeholder="Paste your WhatsApp, Discord, or group chat messages here..."></textarea>
+      <div class="muted" style="margin-top:9px" id="count">0 characters</div>
+      <button class="primary" id="summarize">✦ Summarize &amp; Prioritize</button>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section class="results" id="results">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Conversation overview</h2>
+          <button class="secondary" id="copy">Copy results</button>
+        </div>
+        <div class="summary" id="summary"></div>
+      </div>
+
+      <div class="result-grid">
+        <section class="panel">
+          <div class="panel-head"><h2>☑ Action items</h2></div>
+          <div id="actions"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>⚡ Important messages</h2></div>
+          <div id="important"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>📌 Decisions &amp; deadlines</h2></div>
+          <div id="decisions"></div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>💬 Messages to review</h2></div>
+          <div id="questions"></div>
+        </section>
+      </div>
+      <p class="muted">This version analyzes text in your browser using simple rules. Verify names, dates, and extracted tasks before relying on them.</p>
+    </section>
+  </main>
+
+  <footer>ChatDigest · Built to make group chats easier to manage.</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const chat = $("chat");
+
+$("demo").addEventListener("click", () => {
+  chat.value = `[10:00 AM] Alex: Our college project presentation is on Friday.
+[10:02 AM] Priya: I will finish the slides by Thursday evening.
+[10:04 AM] Rahul: Can someone test the app before the presentation?
+[10:06 AM] Alex: Rahul, please test the app by Thursday.
+[10:08 AM] Priya: Let's meet tomorrow at 3 PM in the library.
+[10:10 AM] Sam: Important: everyone must submit their report before Friday.
+[10:12 AM] Rahul: Agreed. I will send the test results in the group.
+[10:14 AM] Alex: Final decision: we will present the updated version on Friday.
+[10:15 AM] Sam: Does anyone have the report template?`;
+  updateCount();
+});
+
+function updateCount() {
+  $("count").textContent = chat.value.length + " characters";
+}
+chat.addEventListener("input", updateCount);
+
+function unique(items) {
+  return [...new Set(items)];
+}
+
+function renderList(id, items, emptyText) {
+  const root = $(id);
+  root.replaceChildren();
+  if (!items.length) {
+    const p = document.createElement("p");
+    p.className = "empty";
+    p.textContent = emptyText;
+    root.appendChild(p);
+    return;
+  }
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    if (id === "actions") {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "check";
+      div.appendChild(checkbox);
+    }
+    const text = document.createElement("span");
+    text.textContent = item;
+    div.appendChild(text);
+    root.appendChild(div);
+  });
+}
+
+function getPriority(line) {
+  if (/urgent|asap|important|immediately|must|deadline|overdue/i.test(line))
+    return "HIGH";
+  if (/tomorrow|today|submit|finish|complete|please|need to|by friday/i.test(line))
+    return "MEDIUM";
+  return "LOW";
+}
+
+function summarize() {
+  const raw = chat.value.trim();
+  $("error").textContent = "";
+
+  if (raw.length < 20) {
+    $("error").textContent = "Please paste a longer conversation first.";
+    return;
+  }
+
+  const btn = $("summarize");
+  btn.disabled = true;
+  btn.textContent = "Analyzing conversation...";
+
+  try {
+    const lines = raw.split(/\n+/).map(s => s.trim()).filter(Boolean);
+    const clean = lines.map(line =>
+      line.replace(/^\[?\d{1,2}:\d{2}(?:\s?[AP]M)?\]?\s*/i, "")
+          .replace(/^[^:\n]{1,35}:\s*/, "")
+    ).filter(Boolean);
+
+    const keywords = /please|will |i'll|need to|must |should |deadline|submit|finish|complete|send |prepare|create|test |review|remind|don't forget/i;
+    const decisionWords = /decided|decision|agreed|confirmed|final plan|we will|meeting|deadline|by (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today)/i;
+    const urgentWords = /urgent|asap|important|immediately|must|deadline|overdue|emergency/i;
+    const questionWords = /\?/;
+
+    const actions = unique(lines.filter(line => keywords.test(line))).slice(0, 12);
+    const decisions = unique(lines.filter(line => decisionWords.test(line))).slice(0, 10);
+    const important = unique(lines.filter(line => urgentWords.test(line))).slice(0, 10);
+    const questions = unique(lines.filter(line => questionWords.test(line))).slice(0, 10);
+
+    const sentences = clean.map(s => s.replace(/[.!?]+$/, "")).filter(Boolean);
+    const overview = sentences.slice(0, 3);
+
+    $("summary").textContent =
+      "Conversation contains " + lines.length + " messages. " +
+      (overview.length ? "Main points: " + overview.join(". ") + "." :
+      "Review the extracted items below to understand the conversation.");
+
+    renderList("actions", actions, "No obvious action items found.");
+    renderList("important", important, "No obvious urgent messages found.");
+    renderList("decisions", decisions, "No clear decisions or deadlines detected.");
+    renderList("questions", questions, "No questions detected.");
+
+    $("results").style.display = "block";
+    $("results").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    $("error").textContent = "Something went wrong. Please try again.";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "✦ Summarize & Prioritize";
+  }
+}
+
+$("summarize").addEventListener("click", summarize);
+
+$("copy").addEventListener("click", async () => {
+  const text = [
+    "CHATDIGEST SUMMARY",
+    $("summary").textContent,
+    "ACTION ITEMS",
+    $("actions").innerText,
+    "IMPORTANT MESSAGES",
+    $("important").innerText,
+    "DECISIONS & DEADLINES",
+    $("decisions").innerText,
+    "QUESTIONS",
+    $("questions").innerText
+  ].join("\n\n");
+
+  try {
+    await navigator.clipboard.writeText(text);
+    $("copy").textContent = "Copied!";
+    setTimeout(() => $("copy").textContent = "Copy results", 1500);
+  } catch {
+    $("error").textContent = "Copy was blocked by your browser. Select and copy the results manually.";
+  }
+});
+</script>
+</body>
+</html>
